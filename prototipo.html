@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia Zoe - Con Ticket</title>
+<style>
+*{box-sizing:border-box}body{margin:0;display:flex;font-family:Arial;background:#F3F4F6;min-height:100vh}
+.sidebar{width:240px;background:#4E2026;color:white;min-height:100vh;padding:20px;position:fixed;display:flex;flex-direction:column;z-index:10}
+.mbtn{width:100%;background:#722F37;color:white;border:none;padding:12px;margin:5px 0;border-radius:8px;font-weight:700;cursor:pointer;text-align:left;font-size:12px}
+.mbtn.active{background:white;color:#722F37}
+.main{margin-left:240px;padding:25px;width:calc(100% - 240px)}
+.panel{background:white;padding:20px;border-radius:12px;margin-top:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:15px 0}
+.card{background:white;display:flex;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.card-bar{width:7px}.card-c{padding:14px}
+table{width:100%;border-collapse:collapse;margin-top:12px} th{background:#722F37;color:white;padding:12px;font-size:11px;text-align:left} td{padding:10px;border-bottom:1px solid #eee;font-size:12px;vertical-align:middle}
+.btn{border:none;padding:8px 14px;border-radius:6px;color:white;font-weight:700;cursor:pointer;font-size:11px}
+.btn-verde{background:#16A34A}.btn-rojo{background:#DC2626}.btn-vino{background:#722F37}.btn-azul{background:#2563EB}
+.hidden{display:none}
+#login{position:fixed;inset:0;background:#4E2026;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:white;padding:35px;border-radius:12px;width:360px;text-align:center}
+.login-box input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin:6px 0}
+.prod{background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.1);border:1px solid #eee;display:flex;flex-direction:column}
+.prod img{width:100%;height:130px;object-fit:contain;background:#fafafa;padding:8px}
+.prod-info{padding:10px;flex:1}
+.prod-tag{font-size:9px;background:#F3F4F6;padding:3px 6px;border-radius:4px;display:inline-block;margin:2px 0}
+.busqueda{width:100%;padding:12px;border:2px solid #722F37;border-radius:8px;margin-bottom:12px;font-size:14px}
+.alert{padding:12px;border-radius:8px;margin:8px 0;font-size:12px;font-weight:700}
+.alert-rojo{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
+.alert-amarillo{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+.alert-verde{background:#DCFCE7;color:#166534;border:1px solid #BBF7D0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.form-grid input, .form-grid select{padding:10px;border:1px solid #ddd;border-radius:6px}
+.caducado{border-left:5px solid #DC2626 !important}
+.por-caducar{border-left:5px solid #F59E0B !important}
+</style>
+</head>
+<body>
+<div id="login"><div class="login-box"><h2 style="color:#722F37">FARMACIA ZOE</h2><input id="u" placeholder="Usuario"><input id="p" type="password" placeholder="Contraseña"><button class="btn btn-vino" style="width:100%;padding:12px;margin-top:10px" onclick="entrar()">ENTRAR</button><p style="font-size:11px;color:#666;margin-top:10px">admin / admin123<br>vendedor / 1234</p><p id="err" style="color:red;font-size:12px"></p></div></div>
+<div class="sidebar">
+<h2 style="text-align:center">FARMACIA<br>ZOE<br><small style="font-size:10px;opacity:.6">Con Ticket</small></h2>
+<div id="menuAdmin">
+<button class="mbtn active" onclick="showTab('inicio',this)">🏠 INICIO / ALERTAS</button>
+<button class="mbtn" onclick="showTab('inventario',this)">📦 INVENTARIO</button>
+<button class="mbtn" onclick="showTab('tie',this)">🛒 VENTAS</button>
+<button class="mbtn" onclick="showTab('mov',this)">💰 MOVIMIENTOS</button>
+<button class="mbtn" onclick="showTab('cli',this)">👥 CLIENTES</button>
+</div>
+<div id="menuVend" class="hidden">
+<button class="mbtn active" onclick="showTab('tie',this)">🛒 VENTAS</button>
+</div>
+<button class="btn btn-rojo" style="width:100%;margin-top:auto" onclick="location.reload()">SALIR</button>
+<p id="rolInfo" style="font-size:9px;text-align:center;margin-top:8px;opacity:.6"></p>
+</div>
+<div class="main">
+<div id="inicio">
+<h2>Panel Admin - Alertas [BD]</h2>
+<div class="cards"><div class="card"><div class="card-bar" style="background:#16A34A"></div><div class="card-c"><small>INGRESOS</small><h3 id="tIng">$0</h3></div></div><div class="card"><div class="card-bar" style="background:#DC2626"></div><div class="card-c"><small>EGRESOS</small><h3 id="tEgr">$0</h3></div></div><div class="card"><div class="card-bar" style="background:#2563EB"></div><div class="card-c"><small>SALDO</small><h3 id="tSal">$0</h3></div></div><div class="card"><div class="card-bar" style="background:#EA580C"></div><div class="card-c"><small>VENTAS HOY</small><h3 id="tVentas">0</h3></div></div></div>
+<div id="alertasBox"></div>
+<div class="panel"><h3 style="color:#722F37">📋 HISTORIAL DE VENTAS - DIA Y HORA (BD)</h3><table><thead><tr><th>DIA</th><th>HORA</th><th>PRODUCTOS</th><th>TOTAL</th><th>CLIENTE</th><th>TICKET</th><th>X</th></tr></thead><tbody id="tbVentasAdmin"></tbody></table></div>
+</div>
+<div id="inventario" class="hidden">
+<h2>📦 Inventario por Caducidad [BD]</h2>
+<div class="panel">
+<h3 style="color:#722F37">Agregar / Editar Producto</h3>
+<div class="form-grid">
+<input id="fNombre" placeholder="Nombre * Ej: Paracetamol">
+<input id="fImg" placeholder="Link de imagen (opcional)">
+<select id="fSeccion"><option>Analgésico</option><option>Antibiótico</option><option>Vitaminas</option><option>Antigripal</option><option>Primeros Auxilios</option><option>Higiene</option><option>Abarrotes</option></select>
+<input id="fPresent" placeholder="Presentación Ej: 10 cápsulas">
+<input id="fDosis" placeholder="Dosis Ej: 500 mg">
+<input id="fPrecio" type="number" placeholder="Precio $">
+<input id="fStock" type="number" placeholder="Stock actual">
+<input id="fMin" type="number" placeholder="Stock mínimo Ej: 5">
+<input id="fCadu" type="date">
+</div>
+<button class="btn btn-verde" onclick="guardarProducto()">💾 GUARDAR EN BD</button>
+<button class="btn btn-azul" onclick="limpiarForm()">Limpiar</button>
+</div>
+<div class="panel">
+<div style="display:flex;gap:10px"><input id="buscarInv" class="busqueda" placeholder="🔍 Buscar en inventario..." onkeyup="renderInventario()" style="flex:1"><select id="filtroSeccion" onchange="renderInventario()" style="padding:12px;border-radius:8px;border:2px solid #722F37"><option value="">Todas las secciones</option><option>Analgésico</option><option>Antibiótico</option><option>Vitaminas</option><option>Antigripal</option><option>Primeros Auxilios</option><option>Higiene</option><option>Abarrotes</option></select></div>
+<table><thead><tr><th>IMG</th><th>PRODUCTO</th><th>SECCIÓN</th><th>PRESENTACIÓN / DOSIS</th><th>STOCK</th><th>CADUCIDAD</th><th>PRECIO</th><th>ACCIONES</th></tr></thead><tbody id="tbInv"></tbody></table>
+</div>
+</div>
+<div id="tie" class="hidden">
+<h2>Plantel de Venta</h2>
+<input id="buscarProd" class="busqueda" placeholder="🔍 Buscar producto por nombre, dosis o sección..." onkeyup="mostrarProductos()">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px" id="prods"></div>
+<div class="panel"><h3>🛒 Carrito</h3><div id="car">Vacio</div><h3 id="tot">Total: $0</h3><input id="nomCli" placeholder="Nombre cliente (opcional)" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ddd;margin-top:8px"><button class="btn btn-verde" style="width:100%;padding:14px;margin-top:10px" onclick="vender()">FINALIZAR VENTA</button></div>
+</div>
+<div id="mov" class="hidden"><h2>Movimientos</h2><div class="panel"><div class="form-grid"><input id="mFecha"><select id="mTipo"><option>Ingreso</option><option>Egreso</option></select><input id="mDesc" placeholder="Descripción"><input id="mCant" type="number" placeholder="$"></div><button class="btn btn-verde" onclick="addMov()">AGREGAR</button><table><thead><tr><th>FECHA</th><th>HORA</th><th>TIPO</th><th>DESC</th><th>CANT</th><th>X</th></tr></thead><tbody id="tbMov"></tbody></table></div></div>
+<div id="cli" class="hidden"><h2>Clientes</h2><div class="panel"><input id="cNom" placeholder="Nombre"><input id="cTel" placeholder="Tel"><button class="btn btn-verde" onclick="addCli()">GUARDAR</button><table><thead><tr><th>NOMBRE</th><th>TEL</th><th>X</th></tr></thead><tbody id="tbCli"></tbody></table></div></div>
+</div>
+
+<script>
+let db; let carrito={}; let editId=null;
+let usuarios={"admin":"admin123","vendedor":"1234"};
+function entrar(){let u=document.getElementById("u").value.toLowerCase().trim();let p=document.getElementById("p").value.trim();if(usuarios[u]&&usuarios[u]===p){document.getElementById("login").style.display="none";document.getElementById("rolInfo").innerText="Sesion: "+u;if(u==="vendedor"){document.getElementById("menuAdmin").classList.add("hidden");document.getElementById("menuVend").classList.remove("hidden");showTab("tie",document.querySelector("#menuVend .mbtn"));}else{showTab("inicio",document.querySelector("#menuAdmin .mbtn"))}}else{document.getElementById("err").innerText="Usuario incorrecto"}}
+function showTab(id,btn){document.querySelectorAll(".main > div").forEach(d=>d.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll(".mbtn").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");if(id==="inicio") cargarInicio();}
+
+let req = indexedDB.open("FarmaciaZoeCompletaDB", 2);
+req.onupgradeneeded = e=>{
+    db=e.target.result;
+    if(!db.objectStoreNames.contains("productos")){let s=db.createObjectStore("productos",{keyPath:"id",autoIncrement:true}); s.createIndex("cadu","cadu")}
+    if(!db.objectStoreNames.contains("ventas")) db.createObjectStore("ventas",{keyPath:"id",autoIncrement:true});
+    if(!db.objectStoreNames.contains("movimientos")) db.createObjectStore("movimientos",{keyPath:"id",autoIncrement:true});
+    if(!db.objectStoreNames.contains("clientes")) db.createObjectStore("clientes",{keyPath:"id",autoIncrement:true});
+};
+req.onsuccess = e=>{
+    db=e.target.result;
+    db.transaction("productos","readonly").objectStore("productos").count().onsuccess = ev=>{
+        if(ev.target.result===0){
+            let tx=db.transaction("productos","readwrite"); let st=tx.objectStore("productos");
+            st.add({n:"Paracetamol",img:"https://cdn-icons-png.flaticon.com/512/2966/2966327.png",seccion:"Analgésico",present:"20 cápsulas",dosis:"500 mg",precio:35,stock:15,min:5,cadu:"2026-11-20"});
+            st.add({n:"Ibuprofeno",img:"https://cdn-icons-png.flaticon.com/512/2966/2966327.png",seccion:"Analgésico",present:"10 cápsulas",dosis:"400 mg",precio:45,stock:3,min:5,cadu:"2026-10-25"});
+        }
+        renderInventario(); mostrarProductos(); cargarInicio(); renderMov(); renderCli();
+    };
+};
+
+function limpiarForm(){editId=null;["fNombre","fImg","fPresent","fDosis","fPrecio","fStock","fMin","fCadu"].forEach(id=>document.getElementById(id).value="")}
+function guardarProducto(){
+    let o={n:document.getElementById("fNombre").value.trim(),img:document.getElementById("fImg").value.trim()||"https://cdn-icons-png.flaticon.com/512/2966/2966327.png",seccion:document.getElementById("fSeccion").value,present:document.getElementById("fPresent").value.trim(),dosis:document.getElementById("fDosis").value.trim(),precio:parseFloat(document.getElementById("fPrecio").value)||0,stock:parseInt(document.getElementById("fStock").value)||0,min:parseInt(document.getElementById("fMin").value)||5,cadu:document.getElementById("fCadu").value};
+    if(!o.n||!o.cadu) return alert("Nombre y caducidad obligatorios");
+    let tx=db.transaction("productos","readwrite"); let st=tx.objectStore("productos");
+    if(editId!==null){o.id=editId; st.put(o);} else st.add(o);
+    tx.oncomplete=()=>{limpiarForm(); renderInventario(); mostrarProductos(); cargarInicio();}
+}
+function editarProd(id){let tx=db.transaction("productos","readonly"); tx.objectStore("productos").get(id).onsuccess=e=>{let p=e.target.result; document.getElementById("fNombre").value=p.n; document.getElementById("fImg").value=p.img; document.getElementById("fSeccion").value=p.seccion; document.getElementById("fPresent").value=p.present; document.getElementById("fDosis").value=p.dosis; document.getElementById("fPrecio").value=p.precio; document.getElementById("fStock").value=p.stock; document.getElementById("fMin").value=p.min; document.getElementById("fCadu").value=p.cadu; editId=id; showTab('inventario',document.querySelectorAll('.mbtn')[1]); window.scrollTo(0,0)}}
+function renderInventario(){
+    let tb=document.getElementById("tbInv"); if(!tb) return;
+    let b=document.getElementById("buscarInv").value.toLowerCase(); let sec=document.getElementById("filtroSeccion").value;
+    let tx=db.transaction("productos","readonly"); tx.objectStore("productos").getAll().onsuccess=e=>{
+        let productos=e.target.result.sort((a,b)=> new Date(a.cadu)-new Date(b.cadu)); let hoy=new Date(); hoy.setHours(0,0,0,0); tb.innerHTML="";
+        productos.forEach(p=>{
+            if(b && !(p.n.toLowerCase().includes(b) || p.dosis.toLowerCase().includes(b) || p.seccion.toLowerCase().includes(b))) return;
+            if(sec && p.seccion!==sec) return;
+            let dCadu=new Date(p.cadu); dCadu.setHours(0,0,0,0); let diff=Math.ceil((dCadu-hoy)/(1000*60*60*24));
+            let clase=""; let txtCadu=p.cadu+" ("+diff+" días)"; if(diff<0){clase="caducado"; txtCadu="CADUCADO "+p.cadu} else if(diff<=30){clase="por-caducar"; txtCadu="⚠️ "+p.cadu+" - "+diff+" días"}
+            let stockClase=p.stock<=p.min?"color:#DC2626;font-weight:800":"";
+            tb.innerHTML+=`<tr class="${clase}"><td><img src="${p.img}" style="width:40px;height:40px;object-fit:contain"></td><td><b>${p.n}</b></td><td><span class="prod-tag">${p.seccion}</span></td><td>${p.present}<br><small style="color:#722F37;font-weight:700">${p.dosis}</small></td><td style="${stockClase}">${p.stock} / min ${p.min}</td><td>${txtCadu}</td><td>$${p.precio}</td><td><button class="btn btn-azul" onclick="editarProd(${p.id})">Editar</button> <button class="btn btn-rojo" onclick="borrarProd(${p.id})">X</button></td></tr>`;
+        });
+    };
+}
+function borrarProd(id){db.transaction("productos","readwrite").objectStore("productos").delete(id).onsuccess=()=>{renderInventario(); mostrarProductos(); cargarInicio();}}
+
+function cargarInicio(){
+    let txP=db.transaction("productos","readonly"); txP.objectStore("productos").getAll().onsuccess=e=>{
+        let productos=e.target.result; let hoy=new Date(); hoy.setHours(0,0,0,0); let html=""; let falt=0,cadu=0;
+        productos.forEach(p=>{if(p.stock<=p.min){html+=`<div class="alert alert-rojo">🚨 FALTA STOCK: ${p.n} (${p.present} ${p.dosis}) - Quedan ${p.stock} en ${p.seccion}</div>`;falt++;} let dCadu=new Date(p.cadu); let diff=Math.ceil((dCadu-hoy)/(1000*60*60*24)); if(diff<0){html+=`<div class="alert alert-rojo">❌ CADUCADO: ${p.n} caducó el ${p.cadu}</div>`;cadu++} else if(diff<=30){html+=`<div class="alert alert-amarillo">⚠️ POR CADUCAR en ${diff} días: ${p.n} ${p.dosis} - ${p.present} - Vence ${p.cadu}</div>`;cadu++}});
+        if(falt===0&&cadu===0) html=`<div class="alert alert-verde">✅ Todo en orden - Sin faltantes ni caducidades próximas</div>`;
+        document.getElementById("alertasBox").innerHTML=html;
+    };
+    let txV=db.transaction(["ventas","movimientos"],"readonly");
+    txV.objectStore("ventas").getAll().onsuccess=e=>{
+        let ventas=e.target.result; let tb=document.getElementById("tbVentasAdmin"); tb.innerHTML=""; let hoyStr=new Date().toLocaleDateString(); let hoyV=0; let ing=0;
+        ventas.slice().reverse().forEach(v=>{if(v.fecha===hoyStr) hoyV++; ing+=parseFloat(v.cant); tb.innerHTML+=`<tr><td><b>${v.fecha}</b></td><td style="color:#2563EB"><b>${v.hora||""}</b></td><td>${v.desc.replace("Venta:","")}</td><td style="color:#16A34A;font-weight:800">$${v.cant}</td><td>${v.cliente||"-"}</td><td><button class="btn btn-azul" onclick="imprimirTicketDB(${v.id})">🎫 Ticket</button></td><td><button class="btn btn-rojo" onclick="borrarVenta(${v.id})">X</button></td></tr>`});
+        document.getElementById("tVentas").innerText=hoyV;
+        txV.objectStore("movimientos").getAll().onsuccess=ev=>{
+            let movs=ev.target.result; let egr=0; movs.forEach(m=>{if(m.tipo==="Ingreso") ing+=parseFloat(m.cant); else egr+=parseFloat(m.cant)});
+            document.getElementById("tIng").innerText="$"+ing; document.getElementById("tEgr").innerText="$"+egr; document.getElementById("tSal").innerText="$"+(ing-egr);
+        };
+    };
+}
+function borrarVenta(id){db.transaction("ventas","readwrite").objectStore("ventas").delete(id).onsuccess=()=>cargarInicio()}
+
+function mostrarProductos(){
+    let c=document.getElementById("prods"); if(!c) return; let f=document.getElementById("buscarProd").value.toLowerCase();
+    db.transaction("productos","readonly").objectStore("productos").getAll().onsuccess=e=>{
+        let productos=e.target.result; c.innerHTML="";
+        productos.filter(p=>p.stock>0).forEach(p=>{
+            if(f && !(p.n.toLowerCase().includes(f) || p.dosis.toLowerCase().includes(f) || p.seccion.toLowerCase().includes(f) || p.present.toLowerCase().includes(f))) return;
+            let diff=Math.ceil((new Date(p.cadu)-new Date())/(1000*60*60*24)); let borde=diff<0?"border:2px solid red":diff<=30?"border:2px solid orange":"";
+            c.innerHTML+=`<div class="prod" style="${borde}"><img src="${p.img}"><div class="prod-info"><span class="prod-tag">${p.seccion}</span><br><b>${p.n}</b><br><small>${p.present} | ${p.dosis}</small><br><small style="color:#666">Stock: ${p.stock} | Cad: ${p.cadu}</small><br><span style="color:#087f65;font-weight:800">$${p.precio}</span><br><button class="btn btn-verde" style="width:100%;margin-top:6px" onclick="agregar(${p.id})">Agregar</button></div></div>`;
+        });
+    };
+}
+function agregar(id){db.transaction("productos","readonly").objectStore("productos").get(id).onsuccess=e=>{let pr=e.target.result; if((carrito[id]||0)>=pr.stock) return alert("No hay más stock de "+pr.n); carrito[id]=(carrito[id]||0)+1; mostrarCarrito();}}
+function mostrarCarrito(){let div=document.getElementById("car"); let tot=0; let txt=""; let tx=db.transaction("productos","readonly"); let st=tx.objectStore("productos"); let keys=Object.keys(carrito); if(keys.length===0){div.innerHTML="Vacio"; document.getElementById("tot").innerText="Total: $0"; return} let pending=keys.length; txt=""; tot=0; keys.forEach(k=>{st.get(parseInt(k)).onsuccess=ev=>{let pr=ev.target.result; tot+=pr.precio*carrito[k]; txt+=`${pr.n} ${pr.dosis} x${carrito[k]} = $${pr.precio*carrito[k]} <button class="btn btn-rojo" onclick="quitar(${k})">-</button><br>`; pending--; if(pending===0){div.innerHTML=txt; document.getElementById("tot").innerText="Total: $"+tot;}}})}
+function quitar(i){if(carrito[i]){carrito[i]--; if(carrito[i]<=0) delete carrito[i];} mostrarCarrito();}
+
+// --- VENTA CON TICKET ---
+function vender(){
+    let ids=Object.keys(carrito); if(ids.length===0) return alert("Carrito vacio");
+    let txRead=db.transaction("productos","readonly"); let stRead=txRead.objectStore("productos");
+    let productosMap={}; let pending=ids.length;
+    ids.forEach(k=>{stRead.get(parseInt(k)).onsuccess=ev=>{productosMap[k]=ev.target.result; pending--; if(pending===0) doVender();}})
+    function doVender(){
+        let tot=0; let desc="Venta: "; let detalleTicket=[];
+        for(let k in carrito){let pr=productosMap[k]; tot+=pr.precio*carrito[k]; desc+=`${pr.n} ${pr.dosis} x${carrito[k]}, `; detalleTicket.push({nombre:pr.n, dosis:pr.dosis, present:pr.present, precio:pr.precio, cant:carrito[k]}); }
+        let cli=document.getElementById("nomCli").value||"-"; let ahora=new Date();
+        let tx=db.transaction(["productos","ventas"],"readwrite");
+        let stP=tx.objectStore("productos"); let stV=tx.objectStore("ventas");
+        for(let k in carrito){let pr=productosMap[k]; pr.stock-=carrito[k]; stP.put(pr);}
+        stV.add({fecha:ahora.toLocaleDateString(),hora:ahora.toLocaleTimeString(),tipo:"Ingreso",desc:desc,cant:tot,cliente:cli, detalle:detalleTicket});
+        tx.oncomplete=()=>{
+            carrito={}; document.getElementById("nomCli").value=""; renderInventario(); mostrarProductos(); cargarInicio(); mostrarCarrito();
+            // PREGUNTA TICKET
+            if(confirm("Venta $"+tot+" realizada\n¿Quieres imprimir ticket?")){
+                imprimirTicket({fecha:ahora.toLocaleDateString(), hora:ahora.toLocaleTimeString(), cliente:cli, total:tot, detalle:detalleTicket});
+            }
+        }
+    }
+}
+
+// FUNCION DE TICKET PARA IMPRIMIR
+function imprimirTicket(venta){
+    let win = window.open('', '', 'width=300,height=600');
+    let itemsHtml = venta.detalle.map(d=>`
+        <div style="display:flex;justify-content:space-between;border-bottom:1px dashed #000;padding:4px 0;font-size:12px">
+            <span>${d.nombre} ${d.dosis}<br><small>${d.present} x${d.cant}</small></span>
+            <span>$${d.precio * d.cant}</span>
+        </div>
+    `).join('');
+    win.document.write(`
+    <html><head><title>Ticket</title>
+    <style>
+        body{font-family:monospace;width:58mm;margin:0;padding:10px;font-size:12px;color:#000}
+        h2{text-align:center;margin:0;font-size:16px} .center{text-align:center} .line{border-top:1px dashed #000;margin:8px 0}
+        @media print{body{width:58mm}}
+    </style>
+    </head><body>
+        <h2>FARMACIA ZOE</h2>
+        <div class="center">Cuidando tu salud<br>Ticket de Venta</div>
+        <div class="line"></div>
+        Fecha: ${venta.fecha} ${venta.hora}<br>
+        Cliente: ${venta.cliente}<br>
+        <div class="line"></div>
+        ${itemsHtml}
+        <div class="line"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px"><span>TOTAL</span><span>$${venta.total}</span></div>
+        <div class="line"></div>
+        <div class="center">¡Gracias por tu compra!<br>Vuelva pronto<br><br>***</div>
+        <script>window.print(); window.onafterprint = ()=>window.close();<\/script>
+    </body></html>
+    `);
+    win.document.close();
+}
+
+function imprimirTicketDB(id){
+    db.transaction("ventas","readonly").objectStore("ventas").get(id).onsuccess=e=>{
+        let v=e.target.result;
+        imprimirTicket({fecha:v.fecha, hora:v.hora, cliente:v.cliente, total:v.cant, detalle: v.detalle || [{nombre:v.desc, dosis:"", present:"", precio:v.cant, cant:1}]});
+    }
+}
+
+document.getElementById("mFecha").value=new Date().toLocaleDateString();
+function addMov(){let d=document.getElementById("mDesc").value; let c=parseFloat(document.getElementById("mCant").value); if(d===""||isNaN(c)) return alert("Completa"); let ahora=new Date(); let tx=db.transaction("movimientos","readwrite"); tx.objectStore("movimientos").add({fecha:document.getElementById("mFecha").value,hora:ahora.toLocaleTimeString(),tipo:document.getElementById("mTipo").value,desc:d,cant:c,cliente:"-"}); tx.oncomplete=()=>{renderMov(); cargarInicio();}}
+function renderMov(){let tb=document.getElementById("tbMov"); if(!tb) return; db.transaction("movimientos","readonly").objectStore("movimientos").getAll().onsuccess=e=>{let regs=e.target.result; tb.innerHTML=""; regs.forEach(r=>{tb.innerHTML+=`<tr><td>${r.fecha}</td><td>${r.hora||"-"}</td><td>${r.tipo}</td><td>${r.desc}</td><td>$${r.cant}</td><td><button class="btn btn-rojo" onclick="borrarMov(${r.id})">X</button></td></tr>`})}}
+function borrarMov(id){db.transaction("movimientos","readwrite").objectStore("movimientos").delete(id).onsuccess=()=>{renderMov(); cargarInicio();}}
+function addCli(){let n=document.getElementById("cNom").value; if(n==="")return; let tx=db.transaction("clientes","readwrite"); tx.objectStore("clientes").add({nom:n,tel:document.getElementById("cTel").value}); tx.oncomplete=()=>renderCli()}
+function renderCli(){let tb=document.getElementById("tbCli"); if(!tb) return; db.transaction("clientes","readonly").objectStore("clientes").getAll().onsuccess=e=>{let clientes=e.target.result; tb.innerHTML=""; clientes.forEach(c=>{tb.innerHTML+=`<tr><td>${c.nom}</td><td>${c.tel}</td><td><button class="btn btn-rojo" onclick="borrarCli(${c.id})">X</button></td></tr>`})}}
+function borrarCli(id){db.transaction("clientes","readwrite").objectStore("clientes").delete(id).onsuccess=()=>renderCli()}
+</script>
+</body>
+</html>
